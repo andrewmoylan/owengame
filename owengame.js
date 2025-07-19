@@ -48,6 +48,12 @@ let mouseY = 0;
 let lastShotTime = 0;
 let fireRate = 1; // shots per second
 
+const gameStartTime = Date.now();
+const BASE_ENEMY_SPAWN_INTERVAL = 2000;
+const BASE_POWERUP_SPAWN_INTERVAL = 10000;
+let lastEnemySpawnTime = 0;
+let lastPowerupSpawnTime = 0;
+
 function spawnEnemy() {
     const isStrong = Math.random() < STRONG_ENEMY_CHANCE;
 
@@ -300,6 +306,22 @@ function draw() {
 
 function gameLoop() {
     const now = Date.now();
+
+    const elapsedTimeMinutes = (now - gameStartTime) / 60000;
+    const difficultyMultiplier = 1 + Math.floor(elapsedTimeMinutes);
+
+    const currentEnemySpawnInterval = BASE_ENEMY_SPAWN_INTERVAL / difficultyMultiplier;
+    if (now - lastEnemySpawnTime > currentEnemySpawnInterval) {
+        spawnEnemy();
+        lastEnemySpawnTime = now;
+    }
+
+    const currentPowerupSpawnInterval = BASE_POWERUP_SPAWN_INTERVAL / difficultyMultiplier;
+    if (now - lastPowerupSpawnTime > currentPowerupSpawnInterval) {
+        spawnPowerup();
+        lastPowerupSpawnTime = now;
+    }
+
     if (rightMouseDown && now - lastShotTime > (1000 / fireRate)) {
         shoot();
         lastShotTime = now;
@@ -343,8 +365,5 @@ window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
-
-setInterval(spawnEnemy, 2000);
-setInterval(spawnPowerup, 10000);
 
 gameLoop();
