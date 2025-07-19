@@ -21,6 +21,29 @@ const PROJECTILE_RADIUS = 4;
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_COLOR = 'yellow';
 
+// Enemies
+const enemies = [];
+const ENEMY_RADIUS = 15;
+const ENEMY_SPEED = 1;
+const ENEMY_COLOR = 'red';
+
+let score = 0;
+
+function spawnEnemy() {
+    const x = Math.random() * (canvas.width - ENEMY_RADIUS * 2) + ENEMY_RADIUS;
+    const y = Math.random() * (canvas.height - ENEMY_RADIUS * 2) + ENEMY_RADIUS;
+    const angle = Math.random() * Math.PI * 2;
+    const enemy = {
+        x,
+        y,
+        radius: ENEMY_RADIUS,
+        color: ENEMY_COLOR,
+        dx: Math.cos(angle) * ENEMY_SPEED,
+        dy: Math.sin(angle) * ENEMY_SPEED,
+    };
+    enemies.push(enemy);
+}
+
 function updatePlayer() {
     const dx = player.targetX - player.x;
     const dy = player.targetY - player.y;
@@ -41,6 +64,24 @@ function updateProjectiles() {
         p.x += p.dx;
         p.y += p.dy;
 
+        let projectileRemoved = false;
+        // Check for collision with enemies
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            const e = enemies[j];
+            const dist = Math.hypot(p.x - e.x, p.y - e.y);
+            if (dist - e.radius - PROJECTILE_RADIUS < 1) {
+                enemies.splice(j, 1);
+                projectiles.splice(i, 1);
+                score++;
+                projectileRemoved = true;
+                break; // Exit enemy loop, projectile is gone
+            }
+        }
+
+        if (projectileRemoved) {
+            continue;
+        }
+
         // Remove projectile if it's off-screen
         if (p.x + PROJECTILE_RADIUS < 0 ||
             p.x - PROJECTILE_RADIUS > canvas.width ||
@@ -49,6 +90,21 @@ function updateProjectiles() {
             projectiles.splice(i, 1);
         }
     }
+}
+
+function updateEnemies() {
+    enemies.forEach(e => {
+        e.x += e.dx;
+        e.y += e.dy;
+
+        // Bounce off walls
+        if (e.x - e.radius < 0 || e.x + e.radius > canvas.width) {
+            e.dx *= -1;
+        }
+        if (e.y - e.radius < 0 || e.y + e.radius > canvas.height) {
+            e.dy *= -1;
+        }
+    });
 }
 
 function draw() {
@@ -62,6 +118,15 @@ function draw() {
     ctx.fill();
     ctx.closePath();
 
+    // Draw enemies
+    enemies.forEach(e => {
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fillStyle = e.color;
+        ctx.fill();
+        ctx.closePath();
+    });
+
     // Draw projectiles
     projectiles.forEach(p => {
         ctx.beginPath();
@@ -70,11 +135,17 @@ function draw() {
         ctx.fill();
         ctx.closePath();
     });
+
+    // Draw score
+    ctx.fillStyle = 'white';
+    ctx.font = '24px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
 }
 
 function gameLoop() {
     updatePlayer();
     updateProjectiles();
+    updateEnemies();
     draw();
     requestAnimationFrame(gameLoop);
 }
@@ -103,5 +174,7 @@ window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
+
+setInterval(spawnEnemy, 2000);
 
 gameLoop();
