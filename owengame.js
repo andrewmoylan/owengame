@@ -40,6 +40,10 @@ const STRONG_ENEMY_COLOR = 'purple';
 const STRONG_ENEMY_HEALTH = 3;
 const STRONG_ENEMY_RADIUS_MULTIPLIER = 1.5;
 const STRONG_ENEMY_SPEED_MULTIPLIER = 1.5;
+const BLUE_ENEMY_COLOR = 'blue';
+const BLUE_ENEMY_HEALTH = 5;
+const BLUE_ENEMY_RADIUS_MULTIPLIER = 2;
+const BLUE_ENEMY_SPEED_MULTIPLIER = 2;
 
 let score = 0;
 
@@ -91,6 +95,23 @@ function createStrongEnemy(x, y) {
         dx: Math.cos(angle) * speed,
         dy: Math.sin(angle) * speed,
         health: STRONG_ENEMY_HEALTH,
+        lastShotTime: 0,
+    };
+    enemies.push(enemy);
+}
+
+function createBlueEnemy(x, y) {
+    const radius = ENEMY_RADIUS * BLUE_ENEMY_RADIUS_MULTIPLIER;
+    const speed = ENEMY_SPEED * BLUE_ENEMY_SPEED_MULTIPLIER;
+    const angle = Math.random() * Math.PI * 2;
+    const enemy = {
+        x,
+        y,
+        radius,
+        color: BLUE_ENEMY_COLOR,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        health: BLUE_ENEMY_HEALTH,
         lastShotTime: 0,
     };
     enemies.push(enemy);
@@ -204,6 +225,16 @@ function updateEnemies() {
                     createStrongEnemy(newX, newY);
                     
                     break;
+                } else if (e1.health === STRONG_ENEMY_HEALTH && e2.health === STRONG_ENEMY_HEALTH) {
+                    const newX = (e1.x + e2.x) / 2;
+                    const newY = (e1.y + e2.y) / 2;
+
+                    enemies.splice(i, 1);
+                    enemies.splice(j, 1);
+
+                    createBlueEnemy(newX, newY);
+
+                    break;
                 }
             }
         }
@@ -230,7 +261,14 @@ function updateEnemies() {
 
             if (dist < e.radius) {
                 const now = Date.now();
-                if (now - e.lastShotTime > ENEMY_SHOOT_COOLDOWN) {
+                let cooldown = ENEMY_SHOOT_COOLDOWN;
+                if (e.health === STRONG_ENEMY_HEALTH) {
+                    cooldown /= 2;
+                } else if (e.health === BLUE_ENEMY_HEALTH) {
+                    cooldown /= 3;
+                }
+
+                if (now - e.lastShotTime > cooldown) {
                     e.lastShotTime = now;
                     // Shoot projectile in random direction
                     const angle = Math.random() * Math.PI * 2;
