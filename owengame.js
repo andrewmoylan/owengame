@@ -26,20 +26,39 @@ const enemies = [];
 const ENEMY_RADIUS = 15;
 const ENEMY_SPEED = 1;
 const ENEMY_COLOR = 'red';
+const STRONG_ENEMY_CHANCE = 0.1;
+const STRONG_ENEMY_COLOR = 'purple';
+const STRONG_ENEMY_HEALTH = 3;
+const STRONG_ENEMY_RADIUS_MULTIPLIER = 1.5;
+const STRONG_ENEMY_SPEED_MULTIPLIER = 1.5;
 
 let score = 0;
 
+let rightMouseDown = false;
+let mouseX = 0;
+let mouseY = 0;
+let lastShotTime = 0;
+const SHOOT_COOLDOWN = 200; // 5 shots per second
+
 function spawnEnemy() {
-    const x = Math.random() * (canvas.width - ENEMY_RADIUS * 2) + ENEMY_RADIUS;
-    const y = Math.random() * (canvas.height - ENEMY_RADIUS * 2) + ENEMY_RADIUS;
+    const isStrong = Math.random() < STRONG_ENEMY_CHANCE;
+
+    const radius = isStrong ? ENEMY_RADIUS * STRONG_ENEMY_RADIUS_MULTIPLIER : ENEMY_RADIUS;
+    const speed = isStrong ? ENEMY_SPEED * STRONG_ENEMY_SPEED_MULTIPLIER : ENEMY_SPEED;
+    const color = isStrong ? STRONG_ENEMY_COLOR : ENEMY_COLOR;
+    const health = isStrong ? STRONG_ENEMY_HEALTH : 1;
+
+    const x = Math.random() * (canvas.width - radius * 2) + radius;
+    const y = Math.random() * (canvas.height - radius * 2) + radius;
     const angle = Math.random() * Math.PI * 2;
     const enemy = {
         x,
         y,
-        radius: ENEMY_RADIUS,
-        color: ENEMY_COLOR,
-        dx: Math.cos(angle) * ENEMY_SPEED,
-        dy: Math.sin(angle) * ENEMY_SPEED,
+        radius,
+        color,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        health,
     };
     enemies.push(enemy);
 }
@@ -70,10 +89,13 @@ function updateProjectiles() {
             const e = enemies[j];
             const dist = Math.hypot(p.x - e.x, p.y - e.y);
             if (dist - e.radius - PROJECTILE_RADIUS < 1) {
-                enemies.splice(j, 1);
+                e.health--;
                 projectiles.splice(i, 1);
-                score++;
                 projectileRemoved = true;
+                if (e.health <= 0) {
+                    enemies.splice(j, 1);
+                    score++;
+                }
                 break; // Exit enemy loop, projectile is gone
             }
         }
@@ -105,6 +127,18 @@ function updateEnemies() {
             e.dy *= -1;
         }
     });
+}
+
+function shoot() {
+    const angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+
+    const projectile = {
+        x: player.x,
+        y: player.y,
+        dx: Math.cos(angle) * PROJECTILE_SPEED,
+        dy: Math.sin(angle) * PROJECTILE_SPEED,
+    };
+    projectiles.push(projectile);
 }
 
 function draw() {
@@ -143,6 +177,12 @@ function draw() {
 }
 
 function gameLoop() {
+    const now = Date.now();
+    if (rightMouseDown && now - lastShotTime > SHOOT_COOLDOWN) {
+        shoot();
+        lastShotTime = now;
+    }
+
     updatePlayer();
     updateProjectiles();
     updateEnemies();
@@ -158,16 +198,23 @@ canvas.addEventListener('click', (event) => {
 
 canvas.addEventListener('contextmenu', (event) => {
     event.preventDefault();
+});
 
-    const angle = Math.atan2(event.clientY - player.y, event.clientX - player.x);
+canvas.addEventListener('mousedown', (event) => {
+    if (event.button === 2) { // Right-click
+        rightMouseDown = true;
+    }
+});
 
-    const projectile = {
-        x: player.x,
-        y: player.y,
-        dx: Math.cos(angle) * PROJECTILE_SPEED,
-        dy: Math.sin(angle) * PROJECTILE_SPEED,
-    };
-    projectiles.push(projectile);
+canvas.addEventListener('mouseup', (event) => {
+    if (event.button === 2) { // Right-click
+        rightMouseDown = false;
+    }
+});
+
+canvas.addEventListener('mousemove', (event) => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
 });
 
 window.addEventListener('resize', () => {
