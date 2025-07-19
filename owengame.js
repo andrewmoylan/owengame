@@ -26,6 +26,7 @@ const ENEMY_SHOOT_COOLDOWN = 100; // 10 shots per second
 
 // Powerups
 const powerups = [];
+const MAX_POWERUPS = 8;
 const POWERUP_SIZE = 10;
 const POWERUP_COLOR = 'green';
 
@@ -317,7 +318,7 @@ function gameLoop() {
     }
 
     const currentPowerupSpawnInterval = BASE_POWERUP_SPAWN_INTERVAL / difficultyMultiplier;
-    if (now - lastPowerupSpawnTime > currentPowerupSpawnInterval) {
+    if (powerups.length < MAX_POWERUPS && now - lastPowerupSpawnTime > currentPowerupSpawnInterval) {
         spawnPowerup();
         lastPowerupSpawnTime = now;
     }
