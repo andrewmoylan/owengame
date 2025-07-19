@@ -22,6 +22,7 @@ const PROJECTILE_RADIUS = 4;
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_COLOR = 'yellow';
 const ENEMY_PROJECTILE_COLOR = 'orange';
+const ENEMY_SHOOT_COOLDOWN = 100; // 10 shots per second
 
 // Powerups
 const powerups = [];
@@ -66,6 +67,7 @@ function spawnEnemy() {
         dx: Math.cos(angle) * speed,
         dy: Math.sin(angle) * speed,
         health,
+        lastShotTime: 0,
     };
     enemies.push(enemy);
 }
@@ -82,6 +84,7 @@ function createStrongEnemy(x, y) {
         dx: Math.cos(angle) * speed,
         dy: Math.sin(angle) * speed,
         health: STRONG_ENEMY_HEALTH,
+        lastShotTime: 0,
     };
     enemies.push(enemy);
 }
@@ -142,21 +145,21 @@ function updateProjectiles() {
             }
         }
 
-        // Check for collision with enemies
-        for (let j = enemies.length - 1; j >= 0; j--) {
-            const e = enemies[j];
-            const dist = Math.hypot(p.x - e.x, p.y - e.y);
-            if (dist - e.radius - PROJECTILE_RADIUS < 1) {
-                e.health--;
-                projectiles.splice(i, 1);
-                projectileRemoved = true;
-                if (e.health <= 0) {
-                    enemies.splice(j, 1);
-                    if (p.owner === 'player') {
+        // Check for collision with enemies for player projectiles
+        if (p.owner === 'player') {
+            for (let j = enemies.length - 1; j >= 0; j--) {
+                const e = enemies[j];
+                const dist = Math.hypot(p.x - e.x, p.y - e.y);
+                if (dist - e.radius - PROJECTILE_RADIUS < 1) {
+                    e.health--;
+                    projectiles.splice(i, 1);
+                    projectileRemoved = true;
+                    if (e.health <= 0) {
+                        enemies.splice(j, 1);
                         score++;
                     }
+                    break; // Exit enemy loop, projectile is gone
                 }
-                break; // Exit enemy loop, projectile is gone
             }
         }
 
@@ -219,18 +222,21 @@ function updateEnemies() {
             const dist = Math.hypot(e.x - testX, e.y - testY);
 
             if (dist < e.radius) {
-                powerups.splice(i, 1);
-                // Shoot projectile in random direction
-                const angle = Math.random() * Math.PI * 2;
-                const projectile = {
-                    x: e.x,
-                    y: e.y,
-                    dx: Math.cos(angle) * PROJECTILE_SPEED,
-                    dy: Math.sin(angle) * PROJECTILE_SPEED,
-                    owner: 'enemy',
-                    color: ENEMY_PROJECTILE_COLOR,
-                };
-                projectiles.push(projectile);
+                const now = Date.now();
+                if (now - e.lastShotTime > ENEMY_SHOOT_COOLDOWN) {
+                    e.lastShotTime = now;
+                    // Shoot projectile in random direction
+                    const angle = Math.random() * Math.PI * 2;
+                    const projectile = {
+                        x: e.x,
+                        y: e.y,
+                        dx: Math.cos(angle) * PROJECTILE_SPEED,
+                        dy: Math.sin(angle) * PROJECTILE_SPEED,
+                        owner: 'enemy',
+                        color: ENEMY_PROJECTILE_COLOR,
+                    };
+                    projectiles.push(projectile);
+                }
             }
         }
     });
