@@ -294,7 +294,7 @@ function updateEnemies() {
 
         if (e.color === BOSS_ENEMY_COLOR) {
             const now = Date.now();
-            if (now - e.lastShotTime > ENEMY_SHOOT_COOLDOWN) {
+            if (now - e.lastShotTime > ENEMY_SHOOT_COOLDOWN * 4) {
                 e.lastShotTime = now;
                 const angle = Math.atan2(player.y - e.y, player.x - e.x);
                 const projectile = {
