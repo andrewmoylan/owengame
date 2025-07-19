@@ -21,6 +21,11 @@ const PROJECTILE_RADIUS = 4;
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_COLOR = 'yellow';
 
+// Powerups
+const powerups = [];
+const POWERUP_SIZE = 10;
+const POWERUP_COLOR = 'green';
+
 // Enemies
 const enemies = [];
 const ENEMY_RADIUS = 15;
@@ -38,7 +43,7 @@ let rightMouseDown = false;
 let mouseX = 0;
 let mouseY = 0;
 let lastShotTime = 0;
-const SHOOT_COOLDOWN = 200; // 5 shots per second
+let fireRate = 1; // shots per second
 
 function spawnEnemy() {
     const isStrong = Math.random() < STRONG_ENEMY_CHANCE;
@@ -63,6 +68,32 @@ function spawnEnemy() {
     enemies.push(enemy);
 }
 
+function createStrongEnemy(x, y) {
+    const radius = ENEMY_RADIUS * STRONG_ENEMY_RADIUS_MULTIPLIER;
+    const speed = ENEMY_SPEED * STRONG_ENEMY_SPEED_MULTIPLIER;
+    const angle = Math.random() * Math.PI * 2;
+    const enemy = {
+        x,
+        y,
+        radius,
+        color: STRONG_ENEMY_COLOR,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        health: STRONG_ENEMY_HEALTH,
+    };
+    enemies.push(enemy);
+}
+
+function spawnPowerup() {
+    const powerup = {
+        x: Math.random() * (canvas.width - POWERUP_SIZE),
+        y: Math.random() * (canvas.height - POWERUP_SIZE),
+        size: POWERUP_SIZE,
+        color: POWERUP_COLOR,
+    };
+    powerups.push(powerup);
+}
+
 function updatePlayer() {
     const dx = player.targetX - player.x;
     const dy = player.targetY - player.y;
@@ -74,6 +105,19 @@ function updatePlayer() {
     } else {
         player.x = player.targetX;
         player.y = player.targetY;
+    }
+
+    // Check for collision with powerups
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        const p = powerups[i];
+        const testX = Math.max(p.x, Math.min(player.x, p.x + p.size));
+        const testY = Math.max(p.y, Math.min(player.y, p.y + p.size));
+        const dist = Math.hypot(player.x - testX, player.y - testY);
+
+        if (dist < player.radius) {
+            powerups.splice(i, 1);
+            fireRate++;
+        }
     }
 }
 
@@ -115,6 +159,30 @@ function updateProjectiles() {
 }
 
 function updateEnemies() {
+    // Enemy merging
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        for (let j = i - 1; j >= 0; j--) {
+            const e1 = enemies[i];
+            const e2 = enemies[j];
+
+            const dist = Math.hypot(e1.x - e2.x, e1.y - e2.y);
+            if (dist < e1.radius + e2.radius) {
+                // Merge two normal enemies
+                if (e1.health === 1 && e2.health === 1) {
+                    const newX = (e1.x + e2.x) / 2;
+                    const newY = (e1.y + e2.y) / 2;
+
+                    enemies.splice(i, 1);
+                    enemies.splice(j, 1);
+
+                    createStrongEnemy(newX, newY);
+                    
+                    break;
+                }
+            }
+        }
+    }
+
     enemies.forEach(e => {
         e.x += e.dx;
         e.y += e.dy;
@@ -152,6 +220,12 @@ function draw() {
     ctx.fill();
     ctx.closePath();
 
+    // Draw powerups
+    powerups.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+
     // Draw enemies
     enemies.forEach(e => {
         ctx.beginPath();
@@ -178,7 +252,7 @@ function draw() {
 
 function gameLoop() {
     const now = Date.now();
-    if (rightMouseDown && now - lastShotTime > SHOOT_COOLDOWN) {
+    if (rightMouseDown && now - lastShotTime > (1000 / fireRate)) {
         shoot();
         lastShotTime = now;
     }
@@ -223,5 +297,6 @@ window.addEventListener('resize', () => {
 });
 
 setInterval(spawnEnemy, 2000);
+setInterval(spawnPowerup, 10000);
 
 gameLoop();
