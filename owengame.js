@@ -239,6 +239,7 @@ function updateProjectiles() {
 
 function updateEnemies() {
     // Enemy merging
+    mergingLoop:
     for (let i = enemies.length - 1; i >= 0; i--) {
         for (let j = i - 1; j >= 0; j--) {
             const e1 = enemies[i];
@@ -273,7 +274,7 @@ function updateEnemies() {
 
                     enemies.splice(0, enemies.length);
                     createBossEnemy(newX, newY);
-                    break;
+                    break mergingLoop;
                 }
             }
         }
