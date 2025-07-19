@@ -341,9 +341,28 @@ function draw() {
     ctx.font = '24px Arial';
     ctx.fillText(`Score: ${score}`, 10, 30);
     ctx.fillText(`Lives: ${player.lives}`, canvas.width - 120, 30);
+
+    if (player.lives <= 0) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.fillStyle = 'white';
+        ctx.font = '80px Arial';
+        ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 50);
+
+        ctx.font = '40px Arial';
+        ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 50);
+    }
 }
 
 function gameLoop() {
+    if (player.lives <= 0) {
+        draw();
+        return;
+    }
     const now = Date.now();
 
     const elapsedTimeMinutes = (now - gameStartTime) / 60000;
