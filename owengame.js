@@ -495,6 +495,16 @@ canvas.addEventListener('mousemove', (event) => {
     mouseY = event.clientY;
 });
 
+window.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') {
+        event.preventDefault();
+        const radius = ENEMY_RADIUS * BLUE_ENEMY_RADIUS_MULTIPLIER;
+        const x = Math.random() * (canvas.width - radius * 2) + radius;
+        const y = Math.random() * (canvas.height - radius * 2) + radius;
+        createBlueEnemy(x, y);
+    }
+});
+
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
