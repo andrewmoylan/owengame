@@ -13,6 +13,7 @@ const player = {
     speed: 3,
     targetX: canvas.width / 2,
     targetY: canvas.height / 2,
+    lives: 10,
 };
 
 // Projectiles
@@ -20,6 +21,7 @@ const projectiles = [];
 const PROJECTILE_RADIUS = 4;
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_COLOR = 'yellow';
+const ENEMY_PROJECTILE_COLOR = 'orange';
 
 // Powerups
 const powerups = [];
@@ -128,6 +130,18 @@ function updateProjectiles() {
         p.y += p.dy;
 
         let projectileRemoved = false;
+
+        // Check for collision with player for enemy projectiles
+        if (p.owner === 'enemy') {
+            const dist = Math.hypot(p.x - player.x, p.y - player.y);
+            if (dist < player.radius + PROJECTILE_RADIUS) {
+                player.lives--;
+                projectiles.splice(i, 1);
+                projectileRemoved = true;
+                continue;
+            }
+        }
+
         // Check for collision with enemies
         for (let j = enemies.length - 1; j >= 0; j--) {
             const e = enemies[j];
@@ -138,7 +152,9 @@ function updateProjectiles() {
                 projectileRemoved = true;
                 if (e.health <= 0) {
                     enemies.splice(j, 1);
-                    score++;
+                    if (p.owner === 'player') {
+                        score++;
+                    }
                 }
                 break; // Exit enemy loop, projectile is gone
             }
@@ -194,6 +210,29 @@ function updateEnemies() {
         if (e.y - e.radius < 0 || e.y + e.radius > canvas.height) {
             e.dy *= -1;
         }
+
+        // Check for collision with powerups
+        for (let i = powerups.length - 1; i >= 0; i--) {
+            const p = powerups[i];
+            const testX = Math.max(p.x, Math.min(e.x, p.x + p.size));
+            const testY = Math.max(p.y, Math.min(e.y, p.y + p.size));
+            const dist = Math.hypot(e.x - testX, e.y - testY);
+
+            if (dist < e.radius) {
+                powerups.splice(i, 1);
+                // Shoot projectile in random direction
+                const angle = Math.random() * Math.PI * 2;
+                const projectile = {
+                    x: e.x,
+                    y: e.y,
+                    dx: Math.cos(angle) * PROJECTILE_SPEED,
+                    dy: Math.sin(angle) * PROJECTILE_SPEED,
+                    owner: 'enemy',
+                    color: ENEMY_PROJECTILE_COLOR,
+                };
+                projectiles.push(projectile);
+            }
+        }
     });
 }
 
@@ -205,6 +244,8 @@ function shoot() {
         y: player.y,
         dx: Math.cos(angle) * PROJECTILE_SPEED,
         dy: Math.sin(angle) * PROJECTILE_SPEED,
+        owner: 'player',
+        color: PROJECTILE_COLOR,
     };
     projectiles.push(projectile);
 }
@@ -239,15 +280,16 @@ function draw() {
     projectiles.forEach(p => {
         ctx.beginPath();
         ctx.arc(p.x, p.y, PROJECTILE_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = PROJECTILE_COLOR;
+        ctx.fillStyle = p.color;
         ctx.fill();
         ctx.closePath();
     });
 
-    // Draw score
+    // Draw score and lives
     ctx.fillStyle = 'white';
     ctx.font = '24px Arial';
     ctx.fillText(`Score: ${score}`, 10, 30);
+    ctx.fillText(`Lives: ${player.lives}`, canvas.width - 120, 30);
 }
 
 function gameLoop() {
