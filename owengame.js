@@ -18,7 +18,7 @@ const player = {
 
 // Projectiles
 const projectiles = [];
-const PROJECTILE_RADIUS = 4;
+const PROJECTILE_RADIUS = 100;
 const PROJECTILE_SPEED = 6;
 const PROJECTILE_COLOR = 'yellow';
 const ENEMY_PROJECTILE_COLOR = 'orange';
